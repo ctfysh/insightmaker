@@ -10,36 +10,7 @@
 
 	<meta http-equiv="X-UA-Compatible" content="chrome=IE8">
 
-  <!--[if lte IE 8]>
 
-  <script type="text/javascript"
-     src="http://ajax.googleapis.com/ajax/libs/chrome-frame/1/CFInstall.min.js">
-
-    </script>
-
-    <style>
-     /*
-      CSS rules to use for styling the overlay:
-        .chromeFrameOverlayContent
-        .chromeFrameOverlayContent iframe
-        .chromeFrameOverlayCloseBar
-        .chromeFrameOverlayUnderlay
-     */
-    </style>
-
-  <script type="text/javascript" >
-
-  alert("You are using an old version of Internet Explorer that does not support Insight Maker.\n\nTo run Insight Maker either:\n\n* Update your copy of Internet Explorer to version 9 or newer.\n* Use a different web browser (we recommend Google Chrome).\n* Install the Chrome Frame browser plug-in for Internet Explorer (you will be prompted to do this after closing this message).\n\nEither of these three options will allow you to run Insight Maker.");
-
-	 window.attachEvent("onload", function() {
-	        CFInstall.check({
-	          mode: "inline", // the default
-	          node: "prompt"
-	        });
-	      });
-
-    </script>
-	<![endif]-->
 
 	<link rel="stylesheet" type="text/css" href="../css/jquery.toastmessage.css" />
  <link href="http://netdna.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.css" rel="stylesheet">
@@ -94,6 +65,7 @@ Ext.setGlyphFontFamily('FontAwesome');
 	var graph_description = "";
 	var graph_tags = "";
 	var saved_enabled = false;
+	var is_owner = true;
 	var is_editor = true;
 	var is_embed = false;
 	var is_topBar = true;
@@ -117,10 +89,7 @@ Ext.setGlyphFontFamily('FontAwesome');
 	<script type="text/javascript" src="../js/Localization.js"></script>
 	<script type="text/javascript" src="../js/Variables.js"></script>
 	<script type="text/javascript" src="../js/SharedJS.js"></script>
-  <script type="text/javascript">
- 		mxBasePath = 'https://jgraph.github.io/mxgraph/javascript/src/';
-  </script>
-	<script type="text/javascript" src="http://jgraph.github.io/mxgraph/javascript/src/js/mxClient.js"></script>
+	<script type="text/javascript" src="../resources/mxgraph/client.min.js"></script>
 	<script type="text/javascript" src="../js/ExtOverrides.js"></script>
 	<script type="text/javascript" src="../js/Updater.js"></script>
 	<script type="text/javascript" src="../js/Sliders.js"></script>

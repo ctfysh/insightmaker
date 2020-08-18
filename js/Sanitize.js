@@ -96,6 +96,8 @@ function clean(txt){
 	if(! txt){
 		return txt;
 	}else{
-		return html_sanitize(txt,function urlX(url) { return url }, function idX(id) { return id });
+		var sanitized = html_sanitize(txt,function urlX(url) { return url }, function idX(id) { return id });
+		sanitized = sanitized.replace(/<a /g, '<a rel="noopener noreferrer nofollow" ');
+		return sanitized;
 	}
 }

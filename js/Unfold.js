@@ -147,7 +147,17 @@ function executeUnfoldAction(action) {
 		if (items.length == []) {
 			items = findAll();
 		}
-		setOpacity(items, data.opacity);
+		var ghosts = [];
+		var nonGhosts = [];
+		items.forEach(function(cell) {
+			if (cell.value.nodeName == "Ghost") {
+				ghosts.push(cell)
+			} else {
+				nonGhosts.push(cell);
+			}
+		})
+		setOpacity(nonGhosts, data.opacity);
+		setOpacity(ghosts, data.opacity * .3);
 		graph.getModel().endUpdate();
 	} else if (action.type == "action") {
 		//lastStepTypes.push("diagram")
@@ -170,6 +180,9 @@ function executeUnfoldAction(action) {
 		} else {
 			collapseFolder(folders);
 		}
+	} else if (action.type == "valueChange") {
+		var data = JSON.parse(action.data);
+		setValue(findID(data.ids), data.newValue);
 	} else {
 		alert("Unknown action!");
 		console.log(action);
@@ -270,6 +283,23 @@ var revealUnfoldButtons = function(showUnfold) {
 			Ext.getCmp("unfoldingPrimitivesNotes").setValue(data.ids);
 		}
 
+		function saveChangeValue() {
+			if (Ext.getCmp("unfoldingValuePrimitives")) {
+				var newValue = Ext.getCmp("unfoldingNewValue").getValue();
+				var ids = Ext.getCmp("unfoldingValuePrimitives").getValue();
+				selectedNode.set("data", JSON.stringify({
+					newValue: newValue,
+					ids: ids
+				}));
+			}
+		}
+
+		function loadChangeValue() {
+			var data = JSON.parse(selectedNode.get("data"));
+			Ext.getCmp("unfoldingValuePrimitives").setValue(data.ids);
+			Ext.getCmp("unfoldingNewValue").setValue(data.newValue);
+		}
+
 		function saveFolder() {
 			if (Ext.getCmp("modeCombo")) {
 				var mode = Ext.getCmp("modeCombo").getValue();
@@ -288,6 +318,7 @@ var revealUnfoldButtons = function(showUnfold) {
 				}));
 			}
 		}
+		
 
 		function loadFolder() {
 			var data = JSON.parse(selectedNode.get("data"));
@@ -392,6 +423,9 @@ var revealUnfoldButtons = function(showUnfold) {
 				} else if (type == "folder") {
 					configs.getLayout().setActiveItem(6);
 					loadFolder();
+				} else if (type == "valueChange") {
+					configs.getLayout().setActiveItem(8);
+					loadChangeValue();
 				}
 			}
 			
@@ -501,6 +535,17 @@ var revealUnfoldButtons = function(showUnfold) {
 							}
 						},
 						'-', {
+							text: getText('Change Value'),
+							handler: function() {
+								addNewNode({
+									text: getText("Value Change"),
+									data: "{\"newValue\": \"100\", \"ids\": []}",
+									type: "valueChange",
+									leaf: true
+								});
+							}
+						},
+						'-', {
 							text: getText('Run Simulation'),
 							handler: function() {
 								addNewNode({
@@ -594,6 +639,34 @@ var revealUnfoldButtons = function(showUnfold) {
 		});
 
 
+		storeData = [];
+		prims = findType(["Stock", "Flow", "Variable"]);
+		for (var i = 0; i < prims.length; i++) {
+			var n = getName(prims[i]);
+			storeData.push({
+				pid: getID(prims[i]),
+				pname: isDefined(n) ? n : "--"
+			});
+		}
+
+		//console.log(storeData)
+		storeData.sort(function(a, b) {
+			return a.pname.localeCompare(b.pname);
+		});
+
+		var valuedConfigStore = new Ext.data.JsonStore({
+			fields: [{
+				name: 'pid',
+				type: 'string'
+			}, {
+				name: 'pname',
+				type: 'string'
+			}],
+			data: storeData
+		});
+
+
+
 		var configs = Ext.create('Ext.container.Container', {
 			flex: 1,
 			layout: 'card',
@@ -602,7 +675,7 @@ var revealUnfoldButtons = function(showUnfold) {
 					padding: 8,
 					bodyStyle: 'background:none',
 					border: false,
-					html: '<p style="color:grey; text-align:center; line-height:1.5em">Use the Story Designer to construct a step-by-step walkthrough of your model. You can reveal your model piece-by-piece, display messages, and run simulations.<br/></br>Once your story is done, consider publishing your model and sharing it with others.</p>'
+					html: '<p style="color:grey; text-align:center; line-height:1.5em">Use the Story Designer to construct a step-by-step walkthrough of your model. You can reveal your model piece-by-piece, display messages, and run simulations.<br/></br>Once your story is done, consider sharing it with others.</p>'
 				}, {
 					xtype: "container",
 					padding: 8,
@@ -903,11 +976,55 @@ var revealUnfoldButtons = function(showUnfold) {
 							]
 						}
 						
-					
+					]
+				},
+
+				{
+					xtype: "container",
+					padding: 8,
+					bodyStyle: 'background:none',
+					border: false,
+					layout: {
+						type: 'vbox',
+						align: 'stretch'
+					},
+					items: [{
+							xtype: "displayfield",
+							value: getText("New Value") + ":"
+						}, {
+							xtype: "textfield",
+							id: "unfoldingNewValue",
+							hideLabel: true,
+							listeners: {
+								change: saveChangeValue
+							}
+						}, 
+						{
+							xtype: "displayfield",
+							value: getText("Primitives whose values will be changed") + ":",
+							style: {
+								'margin-top': '20px'
+							}
+						},
+						
+						Ext.create('Ext.form.field.Tag', {
+							hideLabel: true,
+							name: 'unfoldingValuePrimitives',
+							filterPickList: true,
+							id: 'unfoldingValuePrimitives',
+							displayField: 'pname',
+							valueField: 'pid',
+							queryMode: 'local',
+							store: valuedConfigStore,
+							emptyText: getText("Primitives"),
+							listeners: {
+								change: saveChangeValue
+							}
+						})
+						
 
 					]
 				}
-
 			]
 		});
 
@@ -1049,85 +1166,6 @@ var revealUnfoldButtons = function(showUnfold) {
 		}
 	}
 
-	function publishArticle() {
-		if (drupal_node_ID == -1) {
-			mxUtils.alert("You must save the Insight before publishing an article.");
-			closeAllWindows();
-			updateProperties();
-		} else if (published == false){
-			mxUtils.alert("You must make the Insight public before publishing or updating an article.");
-			closeAllWindows();
-			updateProperties();
-		}else {
-			
-
-			graph.getModel().beginUpdate();
-			
-			var edit = new mxCellAttributeChange(getSetting(), "article", JSON.stringify({
-				comments: Ext.getCmp("articleAllowComments").getValue(),
-				facebookUID: Ext.getCmp("articleFacebookUID").getValue()
-			}));
-			graph.getModel().execute(edit);
-			
-			graph.getModel().endUpdate();
-
-
-			var progress = Ext.MessageBox.show({
-
-				icon: 'run-icon',
-				width: 300,
-				closable: false,
-				modal: true,
-				progress: true,
-				progressText: ' '
-			});
-			progress.wait(getText("<i class='fa fa-file-text-o fa-5x' style='color: lightgrey; float: left; margin-right: 15px; margin-bottom: 8px'></i> Insight Maker is creating your article...<br/><br/>This may take a few minutes. Your article will reflect the state of your model the last time it was saved."))
-
-			var request = $.ajax({
-				type: "GET",
-				url: "/builder/StoryConverter.php",
-				timeout: 900000, 
-				data: {
-					nid: drupal_node_ID,
-					config: getSetting().getAttribute("article")
-				}
-			});
-
-			request.done(function(msg) {
-				//console.log(msg)
-
-				if ((/CONVERSION_COMPLETED/).test(msg)) {
-					var path = "https://insightmaker.com/article/" + drupal_node_ID + "/" + getURLTitle();
-
-					Ext.MessageBox.show({
-						title: getText('Article Created'),
-						msg: getText("Your article was created successfully. You can view it at:<br><br><a href='" + path + "' target='_blank'>" + path + "</a><br/><br/>If you make changes to your story, you will need to update the article."),
-						buttons: Ext.MessageBox.OK,
-						icon: Ext.MessageBox.INFO
-					});
-
-					has_article = true;
-					saveModel();
-
-					configureArticle();
-				} else {
-					progress.close();
-					mxUtils.alert("Could not create article. Please report this to the Insight Maker team.", "error", false);
-
-					has_article = false;
-					saveModel();
-
-					configureArticle();
-				}
-			});
-
-			request.fail(function(jqXHR, textStatus, code) {
-				progress.close();
-				mxUtils.alert("Could not create article: " + textStatus + " - " + code, "error", false);
-			});
-		}
-
-	}
 
 	function deleteArticle() {
 		var request = $.ajax({
@@ -1147,143 +1185,6 @@ var revealUnfoldButtons = function(showUnfold) {
 	}
 
 
-	function articleWindow(){
-		var data = JSON.parse(getSetting().getAttribute("article"));
-		
-		var win = new Ext.Window({
-			title: getText('Publish Article'),
-			tools: [{
-				type: 'help',
-				tooltip: getText('Get Help'),
-				callback: function(panel, tool, event) {
-					showURL("/storytelling")
-				}
-			}],
-			autoScroll: true,
-			closeAction: 'destroy',
-			border: false,
-			modal: true,
-			resizable: false,
-			maximizable: false,
-			shadow: true,
-			buttonAlign: 'right',
-			width: Math.min(Ext.getBody().getViewSize().width, 600),
-			height: Math.min(Ext.getBody().getViewSize().height, 510),
-
-			layout: {
-				type: 'vbox',
-				align: 'stretch'
-			},
-			items: [{
-				xtype:"box",
-				margin: 10,
-				html: "<p>An article takes your Story and converts it into a static webpage. Model diagrams and simulation results are placed in the article as static images. Make sure to define a Story using the <a href='#' onclick='closeAllWindows(); showUnfoldingWin()'> Storytelling Designer</a> prior to publishing your article. You can delete or update your article after publishing it.</p><p>Optionally, you can allow readers to comment on your article using Facebook comments. You can also specify a numeric Facebook user ID to act as a moderator for the discussion.</p>"
-			 },{
-					xtype: "container",
-					layout: {
-						type: 'hbox',
-						align: 'middle'
-					},
-					padding: 8,
-					style: {
-						"border-top": "dashed 1px lightgrey"
-					},
-					items: [{
-						xtype: "box",
-						html: "<i class='fa fa-file-text-o fa-3x' style='color: lightgrey'></i>",
-						margin: 4
-					}, {
-						xtype: "box",
-						html: getText("Article not published"),
-						id: "articleText",
-						style: {
-							"margin-right": "8px",
-							"overflow": "hidden",
-							"text-overflow": "ellipsis"
-						},
-						margin: 4,
-						flex: 1
-					}, {
-						xtype: "button",
-						text: getText("Publish Article"),
-						tooltip: getText("Create a static article from the story."),
-						glyph: 0xf0ee,
-						id: "articlePublish",
-						handler: publishArticle,
-						margin: 4
-					}, {
-						xtype: "button",
-						text: getText("Update"),
-						tooltip: getText("Update the published article to reflect changes to the story."),
-						glyph: 0xf021,
-						id: "articleRefresh",
-						handler: publishArticle,
-						margin: 4
-					}, {
-						xtype: "button",
-						text: getText("Delete"),
-						tooltip: getText("Delete the published article."),
-						glyph: 0xf05e,
-						id: "articleDelete",
-						handler: deleteArticle,
-						/*cls: "x-btn-default-toolbar-small",*/
-						margin: 4
-					}]
-				},
-				
-				{
-				        xtype: 'fieldset',
-				        title: 'Commenting Options',
-				        collapsible: false,
-						margin: 10,
-				        defaults: {
-				            labelWidth: 160,
-				            anchor: '100%',
-				            layout: {
-				                type: 'hbox',
-				                defaultMargins: {top: 0, right: 5, bottom: 0, left: 0}
-				            }
-				        },
-				        items: [{
-				            xtype: 'checkboxfield',
-				            fieldLabel: 'Allow Comments',
-							checked: data.comments,
-							id: "articleAllowComments"
-				        },
-						{
-				            xtype: 'numberfield',
-				            fieldLabel: 'Moderator',
-							emptyText: "Numeric Facebook User ID",
-							value: data.facebookUID,
-							allowDecimals: false,
-							autoStripChars: true,
-							minValue: 0,
-							id: "articleFacebookUID"
-				        }]
-					}],
-
-			
-			buttons: [
-				'->',  {
-					scale: "large",
-					glyph: 0xf00c,
-					text: getText('Done'),
-					handler: function() {
-						win.close();
-
-
-					}
-				}
-			]
-
-		});
-
-		win.show();
-		
-
-		configureArticle()
-	}
-	
 	function blockUnfold(fn){
 		return function(){
 			if(unfoldingManager.unfolding){

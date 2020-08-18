@@ -1,7 +1,7 @@
 "use strict";
 /*
 
-Copyright 2010-2018 Scott Fortmann-Roe. All rights reserved.
+Copyright 2010-2020 Scott Fortmann-Roe. All rights reserved.
 
 This file may distributed and/or modified under the
 terms of the Insight Maker Public License (https://InsightMaker.com/impl).
@@ -79,6 +79,7 @@ function sendGraphtoServer(graph) {
 	}
 
 }
+
 
 function validPrimitiveName(name, primitive) {
 	if (primitive.value.nodeName == "Stock" || primitive.value.nodeName == "Variable" || primitive.value.nodeName == "Converter" || primitive.value.nodeName == "Flow" || primitive.value.nodeName == "Display" || primitive.value.nodeName == "Agents" || primitive.value.nodeName == "Transition" || primitive.value.nodeName == "State") {
@@ -1242,13 +1243,7 @@ var downloadButton = function(name){
 				          res += "\r\n" + cells.join(",");
 				        });
 
-						/*downloadFile(name, res);*/
-
-						new mxXmlRequest(builder_path + "/download.php", $.param({
-							name: name,
-							"format": "csv",
-							"data": res
-						})).simulate(document, "_blank");
+						downloadFile(name, res, 'text/csv');
 					}
 				};
 			}
@@ -1342,9 +1337,8 @@ var downloadButton = function(name){
 
 				var xml = (mxUtils.getXml(root));
 
-				new mxXmlRequest(builder_path + "/download.php", $.param({
-					name: "Insight Maker Diagram",
-					"format": "svg",
-					"data": xml
-				})).simulate(document, "_blank");
+				downloadFile(
+					"Insight Maker Diagram.svg",
+					xml,
+					"text/svg");
 			};

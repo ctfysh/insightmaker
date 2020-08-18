@@ -1,7 +1,7 @@
 "use strict";
 /*
 
-Copyright 2010-2018 Scott Fortmann-Roe. All rights reserved.
+Copyright 2010-2020 Scott Fortmann-Roe. All rights reserved.
 
 This file may distributed and/or modified under the
 terms of the Insight Maker Public License (https://InsightMaker.com/impl).
@@ -67,11 +67,10 @@ function showStyleManager() {
 					glyph: 0xf0ed,
 					handler: function(){
 
-						new mxXmlRequest(builder_path + "/download.php", $.param({
-							name: "Insight Maker Style Sheet",
-							"format": "json",
-							"data": JSON.stringify(getStyleSheet())
-						})).simulate(document, "_blank");
+						downloadFile(
+							"Insight Maker Style Sheet.json",
+							JSON.stringify(getStyleSheet()),
+							"application/json");
 						
 					},
 					margin: 4

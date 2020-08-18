@@ -49,7 +49,7 @@ function testError(txt){
 	errorCount++;
 }
 
-function assertEqual(type, a, b) {
+function 	assertEqual(type, a, b) {
 	testCount++;
 	console.log("- "+test+" - "+type);
 	if(a != b){
@@ -2187,6 +2187,22 @@ function testSimulation(){
 		assertEqual("Non Negative Flow 3 -stock", res.value(s)[2], 10);
 		assertEqual("Non Negative Flow 4", res.value(f)[1], 0);
 
+
+		clearModel()
+
+
+		// Test vector collapsing with no names
+
+		s = createPrimitive("My Stock", "Stock", [100, 100], [140, 50]);
+		f = createConnector("My Flow", "Flow", null, s);
+
+		setValue(s, '{0, 0}');
+		setValue(f, '{{10,10}, {20,20}}');
+		res = runModel(true);
+		assertEqual("Vector collapsing 1", res.lastValue(s)[0], 20*100);
+		assertEqual("Vector collapsing 2", res.lastValue(s)[1], 40*100);
+
+
 		// Test Converter
 
 		clearModel();
@@ -2348,6 +2364,29 @@ function testSimulation(){
 		res = runModel(true);
 		assertEqual("IfThenElse 1",res.value(p)[5],0);
 		assertEqual("IfThenElse 2",res.value(p)[11],1);
+		
+		p2  = createPrimitive("a", "Variable",[0,0],[100,100]);
+		l = createConnector("Link","Link",p2,p);
+		setValue(p2, "2");
+		var p3  = createPrimitive("b", "Variable",[0,0],[100,100]);
+		setValue(p3, "1");
+		l = createConnector("Link","Link", p3, p);
+
+		setValue(p, "IfThenElse([a]=2,([b]+1)*[a],[a])");
+		res = runModel(true);
+		assertEqual("IfThenElse 3",res.value(p)[5],4);
+		assertEqual("IfThenElse 4",res.value(p)[11],4);
+
+		setValue(p, "IfThenElse([a]=2,[b],[a])");
+		res = runModel(true);
+		assertEqual("IfThenElse 5",res.value(p)[5],1);
+		assertEqual("IfThenElse 6",res.value(p)[11],1);
+
+		//Test Complex Vectors
+		setValue(p2, "{a: {1,2,3}, b: {4,5,6}}");
+		setValue(p, "[a].b{2}");
+		res = runModel(true);
+		assertEqual("Comp Vector 1", res.value(p)[12], 5);
 
 		//Test Ramp function
 		setValue(p, "Ramp(10, 15, 10)");
@@ -2598,7 +2637,7 @@ function testSimulation(){
 		assertEqual("Time Units Delay Vec 2", Math.round(res.value(p2)[6]*10000), Math.round(2*10000));
 
 
-		var p3  = createPrimitive("z", "Variable",[0,0],[100,100]);
+		p3  = createPrimitive("z", "Variable",[0,0],[100,100]);
 		setValue(p3, "{x: 2, y: 4}");
 		l = createConnector("Link","Link", p3, p2);
 		setValue(p2, "Delay([x], [z]).y");

@@ -1,7 +1,7 @@
 "use strict";
 /*
 
-Copyright 2010-2018 Scott Fortmann-Roe. All rights reserved.
+Copyright 2010-2020 Scott Fortmann-Roe. All rights reserved.
 
 This file may distributed and/or modified under the
 terms of the Insight Maker Public License (https://InsightMaker.com/impl).
@@ -222,15 +222,16 @@ Downloads a file.
 Parameters:
 
 fileName - The name of the file to download
-data - The data to download.
+data - The data to download
+type - The type of file
 
 */
 
-function downloadFile(fileName, data) {
+function downloadFile(fileName, data, type) {
     var a = document.createElement("a");
     document.body.appendChild(a);
 	
-	var blob = new Blob([data], {type: "octet/stream"}),
+	var blob = new Blob([data], {type: type || "octet/stream"}),
 	    url = window.URL.createObjectURL(blob);
 	a.href = url;
 	a.download = fileName;

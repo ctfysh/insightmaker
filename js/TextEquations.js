@@ -1,7 +1,7 @@
 "use strict";
 /*
 
-Copyright 2010-2018 Scott Fortmann-Roe. All rights reserved.
+Copyright 2010-2020 Scott Fortmann-Roe. All rights reserved.
 
 This file may distributed and/or modified under the
 terms of the Insight Maker Public License (https://InsightMaker.com/impl).
@@ -151,7 +151,10 @@ function textEquations(){
 					xtype: "button",
 					margin: 3,
 					handler: function(){
-						new mxXmlRequest(builder_path + "/download.php", $.param({name: "Model", format: "InsightMaker", "data": getGraphXml(graph).replace(/mxGraphModel/g,"InsightMakerModel")})).simulate(document, "_blank");
+						downloadFile(
+							"Model.InsightMaker",
+							getGraphXml(graph).replace(/mxGraphModel/g,"InsightMakerModel"),
+							"text/xml");
 					}
 				}
 				]
@@ -164,7 +167,7 @@ function textEquations(){
         closeAction: 'destroy',
         border: false,
         modal: true,
-		maximizable: true,
+				maximizable: true,
         resizable: true,
         shadow: true,
         buttonAlign: 'right',

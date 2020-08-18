@@ -1,7 +1,7 @@
 "use strict";
 /*
 
-Copyright 2010-2018 Scott Fortmann-Roe. All rights reserved.
+Copyright 2010-2020 Scott Fortmann-Roe. All rights reserved.
 
 This file may distributed and/or modified under the
 terms of the Insight Maker Public License (https://InsightMaker.com/impl).
@@ -1451,14 +1451,6 @@ var RibbonPanel = function(graph, mainPanel, configPanel) {
 							handler: blockUnfold(showUnfoldingWin),
 							scope: this
 						},
-						{
-							hidden: (!is_editor) || is_ebook,
-							text: getText('Publish Article') + "...",
-							glyph: 0xf0f6,
-							tooltip: getText('Create a crisp, static webpage of describing your model'),
-							handler: blockUnfold(articleWindow),
-							scope: this
-						},
 						 '-', {
 							itemId: 'embed_but',
 							text: getText('Embed in Webpage') + "...",
@@ -1515,8 +1507,10 @@ var RibbonPanel = function(graph, mainPanel, configPanel) {
 							menu: [{
 									text: getText("Download Insight Maker File"),
 									handler: function(){
-										/*downloadFile("Model.InsightMaker", getGraphXml(graph).replace(/mxGraphModel/g,"InsightMakerModel"));*/
-										new mxXmlRequest(builder_path + "/download.php", $.param({name: "Model", format: "InsightMaker", "data": getGraphXml(graph).replace(/mxGraphModel/g,"InsightMakerModel")})).simulate(document, "_blank");
+										downloadFile(
+											"Model.InsightMaker",
+											getGraphXml(graph).replace(/mxGraphModel/g, "InsightMakerModel"),
+											"text/xml");
 									}
 								},'-',
 								{

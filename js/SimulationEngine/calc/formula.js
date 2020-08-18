@@ -13,7 +13,7 @@ if(! sn){
 	var fn = sn.fn;
 	var ns = fn["number->string"];
 
-	sn.raise = function(conditionType,message){
+	sn.raise = function(conditionType, message){
 		if (message == "division by exact zero"){
 			throw "MSG: You cannot divide by 0."
 		}else{
@@ -232,7 +232,7 @@ Vector.prototype.collapseDimensions = function(target){
 				if(!(targetLevel instanceof Vector)){
 					selector.push(function(x){return functionBank["sum"](x[0].items)});
 					base = base.items[0];
-				}else if(keysMatch(base.namesLC, targetLevel.namesLC)){
+				}else if((base.namesLC === undefined && targetLevel.namesLC === undefined) || (base.namesLC !== undefined && targetLevel.namesLC !== undefined && keysMatch(base.namesLC, targetLevel.namesLC))){
 					selector.push("*");
 					base = base.items[0];
 					targetLevel = targetLevel.items[0]

@@ -223,19 +223,11 @@ var undoHistory;
 
 
 function main() {
-
-	/*Ext.FocusManager.enable();
-	Ext.FocusManager.keyNav.disable(); //needed for firefox graph cell name editing (spaces, backspace)
-	Ext.FocusManager.shouldShowFocusFrame = function() {
-		return false;
-	};*/
-
-
 	Ext.QuickTips.init();
 
 
 	mxConstants.DEFAULT_HOTSPOT = 0.3;
-	mxConstants.LINE_HEIGHT = 1.15;
+	mxConstants.LINE_HEIGHT = 1.2075;
 
 	//Change the settings for touch devices
 
@@ -463,11 +455,11 @@ function main() {
 	mxEdgeHandler.prototype.removeEnabled = true;
 
 	graph.isHtmlLabel = function(cell) {
-		//return false;
 		var isHTML = cell != null && cell.value != null && (cell.value.nodeName != "Display");
 
 		return isHTML;
 	};
+
 	graph.isWrapping = graph.isHtmlLabel;
 
 	graph.isCellLocked = function(cell) {
@@ -530,7 +522,8 @@ function main() {
 
 	mxPanel = Ext.create('Ext.Component', {
 		border: false,
-		id: "mxPanelForModelGraph"
+		id: "mxPanelForModelGraph",
+		style: {'line-height': 0}
 	});
 
 
@@ -661,11 +654,7 @@ function main() {
 
 
 	mxPanel.getEl().dom.style.overflow = 'auto';
-	/*if (mxClient.IS_MAC && mxClient.IS_SF) {
-		graph.addListener(mxEvent.SIZE, function(graph) {
-			graph.container.style.overflow = 'auto';
-		});
-	}*/
+
 
 	graph.model.styleForCellChanged = function(cell, style) {
 		var x = mxGraphModel.prototype.styleForCellChanged(cell, style);
@@ -702,9 +691,7 @@ function main() {
 	});
 
 	graph.addListener(mxEvent.CLICK, function(sender, evt) {
-
 		var cell = evt.getProperty('cell');
-		var realEvt = evt.getProperty('event');
 		if (!evt.isConsumed()) {
 			if (cell == null) {
 				graph.clearSelection();
@@ -825,16 +812,6 @@ function main() {
 	};
 
 
-	/*	if (true && is_editor && drupal_node_ID != -1) {
- var sharer = new mxSession(graph.getModel(), "/builder/hub.php?init&id=" + drupal_node_ID, "/builder/hub.php?id=" + drupal_node_ID, "/builder/hub.php?id=" + drupal_node_ID);
-        sharer.start();
-        sharer.createUndoableEdit = function(changes)
-        {
-            var edit = mxSession.prototype.createUndoableEdit(changes);
-            edit.changes.animate = true;
-            return edit;
-        }
-	}*/
 
 	if ((graph_source_data != null && graph_source_data.length > 0) || drupal_node_ID == -1) {
 		var code;
@@ -880,7 +857,6 @@ function main() {
 	//Update folder displays between collapsed and full versions
 	graph.addListener(mxEvent.CELLS_FOLDED, function(sender, evt) {
 		var cells = evt.properties.cells;
-		var collapse = evt.properties.collapse;
 		for (var i = 0; i < cells.length; i++) {
 			setPicture(cells[i]);
 			setLabelPosition(cells[i]);
@@ -896,7 +872,6 @@ function main() {
 			}
 		}
 		var selectedNonGhost = selected && (graph.getSelectionCount() == 1 ? graph.getSelectionCell().value.nodeName != "Ghost" : true);
-
 
 
 		toolbarItems.down('#folder').setDisabled(graph.getSelectionCount() <= 0);
@@ -985,6 +960,7 @@ function main() {
 
 	graph.getTooltipForCell = function(cell) {
 		if (linkedResults && cell != null) {
+			cell = orig(cell);
 			var displayInformation = linkedResults.displayInformation;
 			//console.log(displayInformation);
 
@@ -1100,6 +1076,12 @@ function main() {
 	// Enables guides
 	mxGraphHandler.prototype.guidesEnabled = true;
 
+	// we don't want a click for a cell in a folder to propagate up to the group
+	mxGraphHandler.prototype.isPropagateSelectionCell = function(cell, immediate, me)
+	{
+		return false;
+	};
+
 	mxGraphHandler.prototype.mouseDown = function(sender, me) {
 		if (!me.isConsumed() && this.isEnabled() && this.graph.isEnabled() && me.getState() != null) {
 			var cell = this.getInitialCellForEvent(me);
@@ -1116,7 +1098,7 @@ function main() {
 				}
 			}
 
-			this.delayedSelection = this.isDelayedSelection(cell);
+			this.delayedSelection = this.isDelayedSelection(cell, me);
 			this.cell = null;
 
 			if (this.isSelectEnabled() && !this.delayedSelection) {
@@ -2649,405 +2631,3 @@ function showContextMenu(node, e) {
 }
 
 
-mxCellRenderer.prototype.initControl = function(state, control, handleEvents, clickHandler)
-{
-	var graph = state.view.graph;
-
-	// In the special case where the label is in HTML and the display is SVG the image
-	// should go into the graph container directly in order to be clickable. Otherwise
-	// it is obscured by the HTML label that overlaps the cell.
-	var isForceHtml = graph.isHtmlLabel(state.cell) && mxClient.NO_FO &&
-		graph.dialect == mxConstants.DIALECT_SVG;
-
-	if (isForceHtml)
-	{
-		control.dialect = mxConstants.DIALECT_PREFERHTML;
-		control.init(graph.container);
-		control.node.style.zIndex = 1;
-	}
-	else
-	{
-		control.init(state.view.getOverlayPane());
-	}
-
-	var node = control.innerNode || control.node;
-
-	if (clickHandler)
-	{
-		if (graph.isEnabled())
-		{
-			node.style.cursor = 'pointer';
-		}
-
-		mxEvent.addListener(node, 'click', clickHandler);
-		mxEvent.addListener(node, 'touchstart', clickHandler); /*SFR XXX adding touch support*/
-	}
-
-	if (handleEvents)
-	{
-		mxEvent.addGestureListeners(node,
-			function (evt)
-			{
-				graph.fireMouseEvent(mxEvent.MOUSE_DOWN, new mxMouseEvent(evt, state));
-				mxEvent.consume(evt);
-			},
-			function (evt)
-			{
-				graph.fireMouseEvent(mxEvent.MOUSE_MOVE, new mxMouseEvent(evt, state));
-			});
-	}
-
-	return node;
-};
-
-
-mxSvgCanvas2D.prototype.text = function(x, y, w, h, str, align, valign, wrap, format, overflow, clip, rotation, dir)
-{
-	if (this.textEnabled && str != null)
-	{
-		rotation = (rotation != null) ? rotation : 0;
-
-		var s = this.state;
-		x += s.dx;
-		y += s.dy;
-
-		if (this.foEnabled && format == 'html')
-		{
-			var style = 'vertical-align:top;';
-
-			if (clip)
-			{
-				style += 'overflow:hidden;max-height:' + Math.round(h) + 'px;max-width:' + Math.round(w) + 'px;';
-			}
-			else if (overflow == 'fill')
-			{
-				style += 'width:' + Math.round(w) + 'px;height:' + Math.round(h) + 'px;';
-			}
-			else if (overflow == 'width')
-			{
-				style += 'width:' + Math.round(w) + 'px;';
-
-				if (h > 0)
-				{
-					style += 'max-height:' + Math.round(h) + 'px;';
-				}
-			}
-
-			if (wrap && w > 0)
-			{
-				style += 'width:' + Math.round(w) + 'px;white-space:normal;';
-			}
-			else
-			{
-				style += 'white-space:nowrap;';
-			}
-
-			// Uses outer group for opacity and transforms to
-			// fix rendering order in Chrome
-			var group = this.createElement('g');
-
-			if (s.alpha < 1)
-			{
-				group.setAttribute('opacity', s.alpha);
-			}
-
-			var fo = this.createElement('foreignObject');
-			fo.setAttribute('pointer-events', 'all');
-
-			var div = this.createDiv(str, align, valign, style, overflow);
-
-			// Ignores invalid XHTML labels
-			if (div == null)
-			{
-				return;
-			}
-			else if (dir != null)
-			{
-				div.setAttribute('dir', dir);
-			}
-
-			group.appendChild(fo);
-			this.root.appendChild(group);
-
-			// Code that depends on the size which is computed after
-			// the element was added to the DOM.
-			var ow = 0;
-			var oh = 0;
-
-			// Padding avoids clipping on border and wrapping for differing font metrics on platforms
-			var padX = 2;
-			var padY = 2;
-
-			// NOTE: IE is always export as it does not support foreign objects
-			if (mxClient.IS_IE && (document.documentMode == 9 || !mxClient.IS_SVG))
-			{
-				// Handles non-standard namespace for getting size in IE
-				var clone = document.createElement('div');
-
-				clone.style.cssText = div.getAttribute('style');
-				clone.style.display = (mxClient.IS_QUIRKS) ? 'inline' : 'inline-block';
-				clone.style.position = 'absolute';
-				clone.style.visibility = 'hidden';
-
-				// Inner DIV is needed for text measuring
-				var div2 = document.createElement('div');
-				div2.style.display = (mxClient.IS_QUIRKS) ? 'inline' : 'inline-block';
-				div2.innerHTML = (mxUtils.isNode(str)) ? str.outerHTML : str;
-				clone.appendChild(div2);
-
-				document.body.appendChild(clone);
-
-				// Workaround for different box models
-				if (document.documentMode != 8 && document.documentMode != 9 && s.fontBorderColor != null)
-				{
-					padX += 2;
-					padY += 2;
-				}
-
-				if (wrap && w > 0)
-				{
-					var tmp = div2.offsetWidth;
-
-					// Workaround for adding padding twice in IE8/IE9 standards mode if label is wrapped
-					var padDx = 0;
-
-					// For export, if no wrapping occurs, we add a large padding to make
-					// sure there is no wrapping even if the text metrics are different.
-					// This adds support for text metrics on different operating systems.
-					if (!clip && this.root.ownerDocument != document)
-					{
-						var ws = clone.style.whiteSpace;
-						clone.style.whiteSpace = 'nowrap';
-
-						// Checks if wrapped width is equal to non-wrapped width (ie no wrapping)
-						if (tmp == div2.offsetWidth)
-						{
-							padX += this.fontMetricsPadding;
-						}
-						else if (document.documentMode == 8 || document.documentMode == 9)
-						{
-							padDx = -2;
-						}
-
-						// Restores the previous white space
-						// This is expensive!
-						clone.style.whiteSpace = ws;
-					}
-
-					// Required to update the height of the text box after wrapping width is known
-					tmp = tmp + padX;
-
-					if (clip)
-					{
-						tmp = Math.min(tmp, w);
-					}
-
-					clone.style.width = tmp + 'px';
-
-					// Padding avoids clipping on border
-					ow = div2.offsetWidth + padX + padDx;
-					oh = div2.offsetHeight + padY;
-
-					// Overrides the width of the DIV via XML DOM by using the
-					// clone DOM style, getting the CSS text for that and
-					// then setting that on the DIV via setAttribute
-					clone.style.display = 'inline-block';
-					clone.style.position = '';
-					clone.style.visibility = '';
-					clone.style.width = ow + 'px';
-
-					div.setAttribute('style', clone.style.cssText);
-				}
-				else
-				{
-					// Padding avoids clipping on border
-					ow = div2.offsetWidth + padX;
-					oh = div2.offsetHeight + padY;
-				}
-
-				clone.parentNode.removeChild(clone);
-				fo.appendChild(div);
-			}
-			else
-			{
-				// Workaround for export and Firefox where sizes are not reported or updated correctly
-				// when inside a foreignObject (Opera has same bug but it cannot be fixed for all cases
-				// using this workaround so foreignObject is disabled).
-				if (this.root.ownerDocument != document || mxClient.IS_FF)
-				{
-					// Getting size via local document for export
-					div.style.visibility = 'hidden';
-					document.body.appendChild(div);
-				}
-				else
-				{
-					fo.appendChild(div);
-				}
-
-				var sizeDiv = div;
-
-				if (sizeDiv.firstChild != null && sizeDiv.firstChild.nodeName == 'DIV')
-				{
-					sizeDiv = sizeDiv.firstChild;
-				}
-
-				var tmp = sizeDiv.offsetWidth;
-
-				// For export, if no wrapping occurs, we add a large padding to make
-				// sure there is no wrapping even if the text metrics are different.
-				if (!clip && wrap && w > 0 && this.root.ownerDocument != document)
-				{
-					var ws = div.style.whiteSpace;
-					div.style.whiteSpace = 'nowrap';
-
-					if (tmp == sizeDiv.offsetWidth)
-					{
-						padX += this.fontMetricsPadding;
-					}
-
-					div.style.whiteSpace = ws;
-				}
-
-				ow = tmp + padX;
-
-				// Recomputes the height of the element for wrapped width
-				if (wrap)
-				{
-					if (clip)
-					{
-						ow = Math.min(ow, w);
-					}
-
-					div.style.width = ow + 'px';
-				}
-
-				ow = sizeDiv.offsetWidth + padX;
-				oh = sizeDiv.offsetHeight + 2;
-
-				if (div.parentNode != fo)
-				{
-					fo.appendChild(div);
-					div.style.visibility = '';
-				}
-			}
-
-			if (clip)
-			{
-				oh = Math.min(oh, h);
-				ow = Math.min(ow, w);
-			}
-
-			if (overflow == 'fill')
-			{
-				w = Math.max(w, ow);
-				h = Math.max(h, oh);
-			}
-			else if (overflow == 'width')
-			{
-				w = Math.max(w, ow);
-				h = oh;
-			}
-			else
-			{
-				w = ow;
-				h = oh;
-			}
-
-			if (s.alpha < 1)
-			{
-				group.setAttribute('opacity', s.alpha);
-			}
-
-			var dx = 0;
-			var dy = 0;
-
-			if (align == mxConstants.ALIGN_CENTER)
-			{
-				dx -= w / 2;
-			}
-			else if (align == mxConstants.ALIGN_RIGHT)
-			{
-				dx -= w;
-			}
-
-			x += dx;
-
-			// FIXME: LINE_HEIGHT not ideal for all text sizes, fix for export
-			if (valign == mxConstants.ALIGN_MIDDLE)
-			{
-				dy -= h / 2 - 2;
-			}
-			else if (valign == mxConstants.ALIGN_BOTTOM)
-			{
-				dy -= h - 3;
-			}
-
-			// Workaround for rendering offsets
-			// TODO: Check if export needs these fixes, too
-			//if (this.root.ownerDocument == document)
-			{
-				if (!mxClient.IS_OP && mxClient.IS_GC && mxClient.IS_MAC)
-				{
-					dy += 1;
-				}
-				else if (mxClient.IS_FF && mxClient.IS_WIN)
-				{
-					dy -= 1;
-				}
-			}
-
-			if(mxClient.IS_FF ){
-				dy -= 1; /* SFR XX FIXME Spacing is off without this */
-			}else{
-				dy -= 2; /* SFR XX FIXME Spacing is off without this */
-			}
-
-
-			y += dy;
-
-			var tr = (s.scale != 1) ? 'scale(' + s.scale + ')' : '';
-
-			if (s.rotation != 0 && this.rotateHtml)
-			{
-				tr += 'rotate(' + (s.rotation) + ',' + (w / 2) + ',' + (h / 2) + ')';
-				var pt = this.rotatePoint((x + w / 2) * s.scale, (y + h / 2) * s.scale,
-					s.rotation, s.rotationCx, s.rotationCy);
-				x = pt.x - w * s.scale / 2;
-				y = pt.y - h * s.scale / 2;
-			}
-			else
-			{
-				x *= s.scale;
-				y *= s.scale;
-			}
-
-			if (rotation != 0)
-			{
-				tr += 'rotate(' + (rotation) + ',' + (-dx) + ',' + (-dy) + ')';
-			}
-
-			group.setAttribute('transform', 'translate(' + Math.round(x) + ',' + Math.round(y) + ')' + tr);
-			fo.setAttribute('width', Math.round(Math.max(1, w)));
-			fo.setAttribute('height', Math.round(Math.max(1, h)));
-
-			// Adds alternate content if foreignObject not supported in viewer
-			if (this.root.ownerDocument != document)
-			{
-				var alt = this.createAlternateContent(fo, x, y, w, h, str, align, valign, wrap, format, overflow, clip, rotation);
-
-				if (alt != null)
-				{
-					fo.setAttribute('requiredFeatures', 'http://www.w3.org/TR/SVG11/feature#Extensibility');
-					var sw = this.createElement('switch');
-					sw.appendChild(fo);
-					sw.appendChild(alt);
-					group.appendChild(sw);
-				}
-			}
-		}
-		else
-		{
-			this.plainText(x, y, w, h, str, align, valign, wrap, overflow, clip, rotation, dir);
-		}
-	}
-};
